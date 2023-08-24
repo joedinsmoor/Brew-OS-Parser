@@ -1,10 +1,12 @@
 import os
 import re
+from io import TextIOWrapper
 from bitstring import ConstBitStream
 
 def main():
     ## Headers to look for
     contactHeader = b'\x01\x06\x00\x05\x08\x08\x00'
+    afterContactNameHeader = '0601'
 
     ## Prompt user to specify file from path
 #    file = input("Enter filename of binary to decode: ")
@@ -14,21 +16,88 @@ def main():
     file_size_bytes = os.path.getsize(file)
     print(f'File size in bytes: {file_size_bytes} bytes') # Print file size
 
-    ## Open and read file contents
-    with open(file, mode="rb") as f:
-        contents = f.read()
-        try:
-            offset = hex(contents.index(contactHeader))
-            formatted_offset = '0x' + offset[2:].zfill(8) # format 0xXXXXXX -> 0x00XXXXXX leading zeroes
-            print(formatted_offset)
-        except ValueError:
-            print('Invalid file')
-#            
-#        if b'\x01\x06\x00\x05\x08\x08\x00' in f.read():
-#            print('Contains Contact data!')
-#            offset = hex(f.tell())
-#            print(offset)
+    header_occurances = [] # List to hold first occurances of all header data
 
+    data = open(file, 'rb')
+
+    s = ConstBitStream(filename=file)
+    occurances = s.findall(contactHeader, bytealigned=True)
+    occurances = list(occurances)
+    totalOccurances = len(occurances)
+    print("Total occurances of contacts found: " + str(totalOccurances))
+    byteOffset = 0
+
+## Read list of total occurances found
+    for i in range(0, totalOccurances):
+        ## Find each offset, then read
+        occuranceOffset = hex(int(occurances[i]/8))
+
+        ## Set bit stream position to individual offset
+        s.bitpos = occurances[i]
+
+        ## READ THE NEXT 8 BYTES (64 bits) -- a.k.a. the contactHeader 
+        headerData = s.read('hex:64') 
+        ## SKIP THE NEXT 6 BYTES (48 bits) 
+        skipData = s.read('pad:48')
+        ## READ THE NEXT 3 BYTES (24 bits) -- bytes leading up to important data 
+        leadingBytes = s.read('hex:24')
+        ## READ THE NEXT 1 BYTE (8 bits) -- a.k.a. the length of the following name entry
+        contactNameLength = s.read('intle:8')
+        ## SKIP THE NEXT 1 BYTE (8 bits)
+        skipData = s.read('pad:8')
+        ## READ THE NEXT n BYTES (8bit*n-bytes)-- a.k.a. the next number of bytes found from contactNameLength*8
+        try: # skip if error is thrown
+            CONTACT_NAME = s.read(8*contactNameLength).tobytes().decode()
+        except UnicodeDecodeError:
+            CONTACT_NAME = 'Null/Bad Entry'
+        ## READ THE NEXT 2 BYTES (16 bits) -- should be SAME for all entries (0x0601), else skip this occurance
+        skipData = s.read('hex:16')
+        if str(skipData) != afterContactNameHeader:
+            continue
+        ## READ THE NEXT 1 BYTE (8 bits) -- either 0x
+        
+        ## PRINT all important entry information
+        print("Address " + str(i) + ": "+ str(occuranceOffset) + ", Header: " + str(headerData))
+#        print("\tSkipped: " + str(skipData))
+#        print("\tLeading: " + str(leadingBytes))
+        print("\tLength: " + str(contactNameLength))
+#        print("\tSkip: " + str(skipData))
+        print("\tContact name: " + str(CONTACT_NAME))
+        print("\tNext: " + str(skipData))
+        
+    data.close()
+
+
+###### OLD CODE (delete later)
+#    ## Open and read file contents
+#    with open(file, mode="rb") as f:
+#        contents = f.read()
+#        try:
+#            offset = contents.index(contactHeader)
+#
+#            formatted_offset = hex(offset)
+#            formatted_offset = '0x' + formatted_offset[2:].zfill(8) # format 0xXXXXXX -> 0x00XXXXXX leading zeroes
+#            header_occurances.append(offset)
+#            print(formatted_offset)
+#
+#            offset = int(offset)
+#            print("Offset: " + str(offset))
+#
+#            n = f.seek(offset)
+#            print("n: " + str(n))
+            
+            # move 64 ascii characters/bytes with f.seek() TO THE NEXT ENTRY
+
+#            list = re.findall(contactHeader, contents)
+#            regex = re.compile(contactHeader)
+#            for match_obj in regex.finditer(contents):
+#                offset = match_obj.start()
+#                print ("decimal: ")
+
+#            print(list)
+
+#        except ValueError:
+#            print('Invalid file')
 
 if __name__ == '__main__':
     main()
