@@ -7,10 +7,14 @@ def main():
     ## Headers to look for
     contactHeader = b'\x01\x06\x00\x05\x08\x08\x00'
     afterContactNameHeader = '0601'
+    areaCodeInd = '0f'
+    noAreaCodeInd = '0c'
+    phoneNumberHeader = '0000ff000000'
 
     ## Prompt user to specify file from path
 #    file = input("Enter filename of binary to decode: ")
-    file = '/Users/cersinterns2/Downloads/23-9726.bin' # Using a static filepath for now (testing-delete later)
+    #file = '/Users/cersinterns2/Downloads/23-9726.bin' # Using a static filepath for now (testing-delete later)
+    file = '/Users/nixycamacho/Downloads/23-9726.bin' # Using a static filepath for now (testing-delete later)
 
     ## Initialize filesize (given a starting and ending offset)
     file_size_bytes = os.path.getsize(file)
@@ -54,17 +58,36 @@ def main():
         skipData = s.read('hex:16')
         if str(skipData) != afterContactNameHeader:
             continue
-        ## READ THE NEXT 1 BYTE (8 bits) -- either 0x
+        ## READ THE NEXT 1 BYTE (8 bits) -- either 0x0F or 0x0C (AREA CODE or NO AREA CODE included, meaning number is either 10d or 7d long)
+        areaCodeData = s.read('hex:8')
+        if str(areaCodeData) == areaCodeInd: # number will be 10d long (includes 3d area code)
+            phoneNumberLength = 10
+        elif str(areaCodeData) == noAreaCodeInd: # number will be 7d long (does not include area code)
+            phoneNumberLength = 7
+        else: # invalid/broken entry, so move on
+            continue
+        ## READ THE NEXT 6 BYTES (48 bits) -- should be same for all valid entries, else skip bad entry
+        skipData = s.read('hex:48')
+        if str(skipData) != phoneNumberHeader:
+            continue
+        ## READ THE NEXT n BYTES (8bit*n-bytes) -- a.k.a. the contact's phone number found from phoneNumberLength*8
+        CONTACT_PHONE_NUMBER = s.read(8*phoneNumberLength).tobytes().decode()
+        
+
         
         ## PRINT all important entry information
-        print("Address " + str(i) + ": "+ str(occuranceOffset) + ", Header: " + str(headerData))
+        #print("Address " + str(i) + ": "+ str(occuranceOffset) + ", Header: " + str(headerData))
+        print("Contact at address: " + str(occuranceOffset))
 #        print("\tSkipped: " + str(skipData))
 #        print("\tLeading: " + str(leadingBytes))
-        print("\tLength: " + str(contactNameLength))
+#        print("\tLength: " + str(contactNameLength))
 #        print("\tSkip: " + str(skipData))
-        print("\tContact name: " + str(CONTACT_NAME))
-        print("\tNext: " + str(skipData))
-        
+        print("\tName: " + str(CONTACT_NAME))
+#        print("\tNext: " + str(skipData))
+#        print("\tNext: " + str(areaCodeData))
+#        print("\tNext: " + str(skipData))
+        print("\tNumber: " + str(CONTACT_PHONE_NUMBER))
+
     data.close()
 
 
