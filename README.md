@@ -6,7 +6,9 @@ Parse BREW OS phone image dump using known hex signatures in Python
 # Features
 * Incrementally searches memory file for possible contact headers
 * Shows start memory address for each contact entry found
-* Displays each name & phone number for any contact entries 
+* Displays each name & phone number for any contact entries
+* Writes found contact output to CSV file
 # To-Dos
 * Optimize code
-* Write output to .CSV file
+* (Maybe) Parse data for text messages
+
