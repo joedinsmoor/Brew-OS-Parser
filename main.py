@@ -77,8 +77,28 @@ def main():
         if str(skipData) != phoneNumberHeader:
             continue
         # READ THE NEXT n BYTES (8bit*n-bytes) -- a.k.a. the contact's phone number found from phoneNumberLength*8
-        CONTACT_PHONE_NUMBER = s.read(8*phoneNumberLength).tobytes().decode()
-        
+        # Then format phone number
+        tempPhone = s.read(8*phoneNumberLength).tobytes().decode()
+
+        CONTACT_PHONE_NUMBER = ''
+        is_10d_flag = False
+        if len(tempPhone) == 10:
+            is_10d_flag = True
+
+        if is_10d_flag: 
+            for i in range(0, len(tempPhone)):
+                if i == 3 or i == 6:
+                    CONTACT_PHONE_NUMBER = CONTACT_PHONE_NUMBER + '-' + tempPhone[i]
+                else:
+                    CONTACT_PHONE_NUMBER = CONTACT_PHONE_NUMBER + tempPhone[i]
+        else:
+            for i in range(0, len(tempPhone)):
+                if i == 3:
+                    CONTACT_PHONE_NUMBER = CONTACT_PHONE_NUMBER + '-' + tempPhone[i]
+                else:
+                    CONTACT_PHONE_NUMBER = CONTACT_PHONE_NUMBER + tempPhone[i]
+
+            
         ## Increment found entry with each successful contact parsed 
         totalEntries += 1
         
