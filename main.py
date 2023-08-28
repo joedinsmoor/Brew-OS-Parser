@@ -1,4 +1,5 @@
 import os
+import csv
 from bitstring import ConstBitStream
 
 def input_file():
@@ -35,6 +36,7 @@ def main():
     print("Found " + str(foundOccurances) + " memory addresses matching contact header " + str(contactHeader) + "\n")
 
     totalEntries = 0
+    foundContactEntries = [["Entry #", "Contact Name", "Associated Phone Number", "Memory Address Offset"]]
 ## Read list of total occurances found
     for i in range(0, foundOccurances):
         ## Find each offset, then read
@@ -58,7 +60,6 @@ def main():
         try: # skip entry if error is thrown
             CONTACT_NAME = s.read(8*contactNameLength).tobytes().decode()
         except UnicodeDecodeError:
-            #CONTACT_NAME = 'Null/Bad Entry'
             continue
         # READ THE NEXT 2 BYTES (16 bits) -- should be SAME for all entries (0x0601), else skip this occurance
         skipData = s.read('hex:16')
@@ -79,12 +80,10 @@ def main():
         # READ THE NEXT n BYTES (8bit*n-bytes) -- a.k.a. the contact's phone number found from phoneNumberLength*8
         # Then format phone number
         tempPhone = s.read(8*phoneNumberLength).tobytes().decode()
-
         CONTACT_PHONE_NUMBER = ''
         is_10d_flag = False
         if len(tempPhone) == 10:
             is_10d_flag = True
-
         if is_10d_flag: 
             for i in range(0, len(tempPhone)):
                 if i == 3 or i == 6:
@@ -103,14 +102,19 @@ def main():
         totalEntries += 1
         
         ## PRINT all important entry information
-        #print("Address " + str(i) + ": "+ str(occuranceOffset) + ", Header: " + str(headerData))
         print("Contact at address: " + str(occuranceOffset) + ", Entry #: " + str(totalEntries))
-#        print("\tLeading data: " + str(leadingData))
-#        print("\tLength of contact name: " + str(contactNameLength))
         print("\tName: " + str(CONTACT_NAME))
         print("\tNumber: " + str(CONTACT_PHONE_NUMBER))
 
+        foundContactEntries.append([str(totalEntries), CONTACT_NAME, CONTACT_PHONE_NUMBER, str(occuranceOffset)])
     data.close()
+
+    ## Write output to csv file
+    with open('foundContacts.csv', 'w', newline='') as outfile:
+        writer = csv.writer(outfile, dialect=csv.excel)
+        for entry in foundContactEntries:
+            writer.writerow(entry)
+
     print("\nTotal contact entries found: " + str(totalEntries))
 
 if __name__ == '__main__':
