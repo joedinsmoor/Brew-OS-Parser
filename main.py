@@ -9,7 +9,9 @@ def input_file():
 def main():
     ## Headers to look for (formatting is intentional)
     contactHeader = b'\x01\x06\x00\x05\x08\x08\x00'
+    smsHeader = b'\x02\x15\x00\x00\x01\x16\x01\x04\x06'
     afterContactNameHeader = '0601'
+    msgNumberHeader = '7f80'
     areaCodeInd = '0f'
     noAreaCodeInd = '0c'
     phoneNumberHeader = '0000ff000000'
@@ -25,6 +27,7 @@ def main():
     file_size_bytes = os.path.getsize(file)
     print(f'File size: {file_size_bytes} bytes') # Print file size
 
+    #### EXTRACT CONTACT DATA
     ## Open phone memory dump image file
     data = open(file, 'rb')
 
@@ -114,8 +117,77 @@ def main():
         writer = csv.writer(outfile, dialect=csv.excel)
         for entry in foundContactEntries:
             writer.writerow(entry)
-
     print("\nTotal contact entries found: " + str(totalEntries))
 
+    #*****************************************************************
+    #### EXTRACT SMS DATA
+    data2 = open(file, 'rb')
+    ## Load file into a bit data stream 
+    s = ConstBitStream(filename=file)
+    occurances = s.findall(smsHeader, bytealigned=True)
+    occurances = list(occurances)
+    foundOccurances = len(occurances)
+    print("Found " + str(foundOccurances) + " memory addresses matching SMS header " + str(smsHeader) + "\n")
+
+    totalEntries = 0
+    foundSmsEntries = [["Entry #", "Message Content", "Associated Phone Number", "Memory Address Offset"]]
+## Read list of total occurances found
+    for i in range(0, foundOccurances):
+        ## Find each offset, then read
+        occuranceOffset = hex(int(occurances[i]/8))
+
+        ## Set bit stream position to individual offset
+        s.bitpos = occurances[i]
+
+        ## Record ~valid~ contact entry data
+        # READ THE FIRST 9 BYTES (72 bits) -- a.k.a. the smsHeader (02 15 00 00 01 16 01 04 06)
+        headerData = s.read('hex:72') 
+        # READ the NEXT 1 BYTE (8 bits) -- a.k.a. length of following message
+        msgDataLength = s.read('intle:8')
+        # SKIP the NEXT 1 BYTE (8 bits) -- should always be '00' for all valid entries
+        #skipData = s.read('pad:8')
+        skipData = s.read('hex:8')
+        #print("\tSkip data: " + str(skipData))
+        # READ the NEXT n BYTES (8bits*n-bytes)
+        try: # skip entry if error is thrown
+            MSG_DATA = s.read(8*msgDataLength).tobytes().decode()
+        except UnicodeDecodeError:
+            #print("\tUnicodeDecodeError with Message data")
+            continue
+        # SKIP the NEXT 17 BYTES (136 bits)
+        skipData = s.read('hex:136')
+        # READ the NEXT 2 BYTES (16 bits) -- a.k.a. the msgNumberHeader, if not valid, then skip
+        skipData = s.read('hex:16')
+        if str(skipData) != msgNumberHeader:
+            #print("Error data != msgNumberHeader: " + str(skipData))
+            continue
+        # READ THE NEXT 10 BYTES (80 bits) -- a.k.a. the mobile phone number assoc. with SMS message 
+        try: 
+            MOBILE_SENDER = s.read(8*10).tobytes().decode()
+            MOBILE_SENDER = int(MOBILE_SENDER) # test value for invalid data characters
+        except UnicodeDecodeError:
+            continue
+        except ValueError:
+            continue
+        finally:
+            MOBILE_SENDER = str(MOBILE_SENDER)
+
+        ## Increment found entry with each successful contact parsed 
+        totalEntries += 1
+        ## PRINT all important SMS information
+        print("SMS Message at address: " + str(occuranceOffset) + ", Entry #: " + str(totalEntries))
+        print("\t\"" + str(MSG_DATA) + "\"")
+        print("\tSender #: " + str(MOBILE_SENDER))
+
+        foundSmsEntries.append([str(totalEntries), MSG_DATA, MOBILE_SENDER, str(occuranceOffset)])
+    data2.close()
+
+    ## Write output to csv file
+    with open('foundSMSData.csv', 'w', newline='') as outfile:
+        writer = csv.writer(outfile, dialect=csv.excel)
+        for entry in foundSmsEntries:
+            writer.writerow(entry)
+    print("\nTotal SMS data entries found: " + str(totalEntries))
+    
 if __name__ == '__main__':
     main()
