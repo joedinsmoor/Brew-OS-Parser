@@ -2,6 +2,7 @@ import os
 import csv
 from bitstring import ConstBitStream
 
+#### EXTRACT CONTACT DATA
 def getContacts(file):
     ## Headers to look for (formatting is intentional)
     contactHeader = b'\x01\x06\x00\x05\x08\x08\x00'
@@ -14,7 +15,6 @@ def getContacts(file):
     file_size_bytes = os.path.getsize(file)
     print(f'File size: {file_size_bytes} bytes') # Print file size
 
-    #### EXTRACT CONTACT DATA
     ## Open phone memory dump image file
     data = open(file, 'rb')
 

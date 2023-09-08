@@ -1,13 +1,12 @@
-import os
 import csv
 from bitstring import ConstBitStream
 
+#### EXTRACT SMS DATA
 def getSMS(file):
     ## Headers to look for (formatting is intentional)
     smsHeader = b'\x02\x15\x00\x00\x01\x16\x01\x04\x06'
     msgNumberHeader = '7f80'
 
-    #### EXTRACT SMS DATA
     data2 = open(file, 'rb')
     ## Load file into a bit data stream 
     s = ConstBitStream(filename=file)
@@ -50,7 +49,7 @@ def getSMS(file):
             continue
         # READ THE NEXT 10 BYTES (80 bits) -- a.k.a. the mobile phone number assoc. with SMS message 
         try: 
-            MOBILE_SENDER = s.read(8*10).tobytes().decode()
+            MOBILE_SENDER = s.read(80).tobytes().decode()
             MOBILE_SENDER = int(MOBILE_SENDER) # test value for invalid data characters
         except UnicodeDecodeError:
             continue
@@ -74,3 +73,4 @@ def getSMS(file):
         writer = csv.writer(outfile, dialect=csv.excel)
         for entry in foundSmsEntries:
             writer.writerow(entry)
+    return totalEntries

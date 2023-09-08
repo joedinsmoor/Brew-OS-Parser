@@ -9,16 +9,16 @@ def input_file():
 def main():
     ## Prompt user to specify file from path (DOES NOT HANDLE ERRORS PROPERLY)
     file = input_file()
-#    file = '/Users/cersinterns2/Downloads/23-9726.bin' #Static filepath for testing
     while file == "":
         print("Enter valid path to file")
         file = input_file()
 
+    #### EXTRACT CONTACT DATA
     contactEntries = getContacts(file)
-    
     print("\nTotal contact entries found: " + str(contactEntries))
+    print("*****************************************************************")
 
-    #*****************************************************************
+    #### EXTRACT SMS DATA
     smsEntries = getSMS(file)
     print("\nTotal SMS data entries found: " + str(smsEntries))
     
