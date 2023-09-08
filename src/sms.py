@@ -7,7 +7,9 @@ def getSMS(file):
     smsHeader = b'\x02\x15\x00\x00\x01\x16\x01\x04\x06'
     msgNumberHeader = '7f80'
 
+    ## Open phone memory dump image file
     data2 = open(file, 'rb')
+
     ## Load file into a bit data stream 
     s = ConstBitStream(filename=file)
     occurances = s.findall(smsHeader, bytealigned=True)
@@ -31,21 +33,17 @@ def getSMS(file):
         # READ the NEXT 1 BYTE (8 bits) -- a.k.a. length of following message
         msgDataLength = s.read('intle:8')
         # SKIP the NEXT 1 BYTE (8 bits) -- should always be '00' for all valid entries
-        #skipData = s.read('pad:8')
         skipData = s.read('hex:8')
-        #print("\tSkip data: " + str(skipData))
         # READ the NEXT n BYTES (8bits*n-bytes)
         try: # skip entry if error is thrown
             MSG_DATA = s.read(8*msgDataLength).tobytes().decode()
         except UnicodeDecodeError:
-            #print("\tUnicodeDecodeError with Message data")
             continue
         # SKIP the NEXT 17 BYTES (136 bits)
         skipData = s.read('hex:136')
         # READ the NEXT 2 BYTES (16 bits) -- a.k.a. the msgNumberHeader, if not valid, then skip
         skipData = s.read('hex:16')
         if str(skipData) != msgNumberHeader:
-            #print("Error data != msgNumberHeader: " + str(skipData))
             continue
         # READ THE NEXT 10 BYTES (80 bits) -- a.k.a. the mobile phone number assoc. with SMS message 
         try: 
@@ -73,4 +71,5 @@ def getSMS(file):
         writer = csv.writer(outfile, dialect=csv.excel)
         for entry in foundSmsEntries:
             writer.writerow(entry)
+
     return totalEntries

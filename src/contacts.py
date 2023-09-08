@@ -1,4 +1,3 @@
-import os
 import csv
 from bitstring import ConstBitStream
 
@@ -12,8 +11,6 @@ def getContacts(file):
     phoneNumberHeader = '0000ff000000'
 
 
-    file_size_bytes = os.path.getsize(file)
-    print(f'File size: {file_size_bytes} bytes') # Print file size
 
     ## Open phone memory dump image file
     data = open(file, 'rb')
@@ -68,8 +65,8 @@ def getContacts(file):
         if str(skipData) != phoneNumberHeader:
             continue
         # READ THE NEXT n BYTES (8bit*n-bytes) -- a.k.a. the contact's phone number found from phoneNumberLength*8
-        # Then format phone number
         tempPhone = s.read(8*phoneNumberLength).tobytes().decode()
+        # Then format phone number
         CONTACT_PHONE_NUMBER = ''
         is_10d_flag = False
         if len(tempPhone) == 10:
@@ -90,7 +87,6 @@ def getContacts(file):
             
         ## Increment found entry with each successful contact parsed 
         totalEntries += 1
-        
         ## PRINT all important entry information
         print("Contact at address: " + str(occuranceOffset) + ", Entry #: " + str(totalEntries))
         print("\tName: " + str(CONTACT_NAME))
@@ -104,4 +100,5 @@ def getContacts(file):
         writer = csv.writer(outfile, dialect=csv.excel)
         for entry in foundContactEntries:
             writer.writerow(entry)
+       
     return totalEntries

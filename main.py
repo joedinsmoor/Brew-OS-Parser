@@ -1,3 +1,4 @@
+import os
 from bitstring import ConstBitStream
 from src.sms import *
 from src.contacts import *
@@ -12,6 +13,11 @@ def main():
     while file == "":
         print("Enter valid path to file")
         file = input_file()
+
+    ## Print file size
+    file_size_bytes = os.path.getsize(file)
+    print(f'File size: {file_size_bytes} bytes') 
+    print("*****************************************************************")
 
     #### EXTRACT CONTACT DATA
     contactEntries = getContacts(file)
