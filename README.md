@@ -3,7 +3,7 @@ Parse BREW (Binary Runtime Environment for Wireless) Platform OS mobile phone im
 
 # Requires
 1. Binary memory image file of a BREW OS phone (extracted using forensics techniques, e.g. chip-off)
-2. Python 3 (and a pip installation of [bitstring](https://pypi.org/project/bitstring/) lib module--just run `pip3 install bitstring` first)
+2. Python 3 installation + required pip packages (run `pip3 -r install requirements.txt`) 
 # Features
 * Incrementally searches memory file for possible contacts and SMS headers
 * Shows start memory address for each contact entry or SMS entry found
@@ -15,6 +15,6 @@ Parse BREW (Binary Runtime Environment for Wireless) Platform OS mobile phone im
 
 
 # To-Dos
-* Optimize code
+* (If time permitting) Implement parsing timestamps for SMS messages (issue #4)
 
 
