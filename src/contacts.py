@@ -3,10 +3,9 @@ import csv
 from bitstring import ConstBitStream
 
 def getContacts(file):
+    ## Headers to look for (formatting is intentional)
     contactHeader = b'\x01\x06\x00\x05\x08\x08\x00'
-    smsHeader = b'\x02\x15\x00\x00\x01\x16\x01\x04\x06'
     afterContactNameHeader = '0601'
-    msgNumberHeader = '7f80'
     areaCodeInd = '0f'
     noAreaCodeInd = '0c'
     phoneNumberHeader = '0000ff000000'
